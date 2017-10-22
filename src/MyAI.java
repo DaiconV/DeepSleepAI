@@ -2,6 +2,8 @@
 // FILE:        MyAI.java
 //
 // AUTHOR:      Abdullah Younis
+//              Marcos Antonio Avila
+//              Kevin Michael Li
 //
 // DESCRIPTION: This file contains your agent class, which you will
 //              implement. You are responsible for implementing the
