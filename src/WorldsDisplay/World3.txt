@@ -1,0 +1,20 @@
+W S . .
+S . . .
+. . . G
+. . . .
+
+[row dimension][tab][column dimension]
+[wumpus row] [tab] [wumpus column]
+[gold row][tab][gold column]
+[number of pits]
+[pit1 row][tab][pit1 column]
+[pit2 row][tab][pit2 column]
+.
+.
+.[pitN row][tab][pitN column]
+
+
+4	4
+3	0
+1	3
+0
