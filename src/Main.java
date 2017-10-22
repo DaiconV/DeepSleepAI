@@ -183,6 +183,7 @@ public class Main
 			
 			if ( listOfWorlds == null )
 			{
+				System.out.println("This is the world directory line 186: " + worldFile);
 				System.out.println ( "[ERROR] Failed to open directory." );
 				return;
 			}
@@ -260,6 +261,7 @@ public class Main
 		
 		if ( !worldFileObject.exists() )
 		{
+			System.out.println("This is the world file 264: " + worldFile);
 			System.out.println ( "[ERROR] Failure to open file." );
 			return;
 		}
@@ -272,6 +274,8 @@ public class Main
 		}
 		catch ( Exception e )
 		{
+			e.printStackTrace();
+			System.out.println("This is the world file line 277: " + worldFile);
 			System.out.println ( "[ERROR] Failure to open file." );
 			return;
 		}
