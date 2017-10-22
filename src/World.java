@@ -327,7 +327,10 @@ public class World
 		
 		r = scan.nextInt();
 		
-		addWumpus ( c, r );
+		if(r == -1)
+		{}
+		else
+			addWumpus ( c, r );
 		
 		// Add the Gold
 		
