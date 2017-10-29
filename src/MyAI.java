@@ -21,7 +21,7 @@
 
 public class MyAI extends Agent
 {
-	public class Cell
+	private class Cell
 	{
 		private double pitProb;
 		private double wumpProb;
@@ -54,21 +54,33 @@ public class MyAI extends Agent
 
 	}
 
-	public Cell[][] agentMap;
-	int curRow;
-	int curCol;
+	private enum Direction
+	{
+		UP, RIGHT, DOWN, LEFT
+	}
+
+	private Cell[][] agentMap;
+	private int mapRows;
+	private int mapCols;
+
+	private int curRow;
+	private int curCol;
+	private Direction curDir;
 
 	public MyAI ( )
 	{
-        //Test
 		// ======================================================================
 		// YOUR CODE BEGINS
 		// ======================================================================
 		//@TODO initialize the map data structure
-		agentMap = new Cell[4][10];
+		
+		mapRows = 4;
+		mapCols = 10;
+		
+		agentMap = new Cell[mapRows][mapCols];
 
-		for(int row = 0; row < 4; ++row)
-			for(int col = 0; col < 10; ++col)
+		for(int row = 0; row < mapRows; ++row)
+			for(int col = 0; col < mapCols; ++col)
 				agentMap[row][col] = new Cell();
 
 		agentMap[0][0].setPitProb(0);	
@@ -76,11 +88,44 @@ public class MyAI extends Agent
 
 		curRow = 0;
 		curCol = 0;
+		curDir = Direction.RIGHT; 
 		// ======================================================================
 		// YOUR CODE ENDS
 		// ======================================================================
 	}
+
+/*	public Cell[] getAdjacentCells(int r, int c)
+	{
+		new
+	}
+*/
+	public void updateMap
+	(
+		boolean stench,
+		boolean breeze,
+		boolean bump
+	)
+	{
+		if(bump)
+			if(curDir == Direction.RIGHT)
+				mapCols = curCol + 1;
+			else if(curDir == Direction.UP)
+				mapRows = curRow + 1;
+		//for()
+	}
 	
+	public void printAgentMap()
+	{
+		for(int row = 3; row >=0; --row)
+		{
+			for(int col = 0; col < 10; ++col)
+			{
+				System.out.printf("%6.1f,%-4.1f", agentMap[row][col].getPitProb(),agentMap[row][col].getWumpProb());
+			}
+			System.out.println();
+		}
+	}
+
 	public Action getAction
 	(
 		boolean stench,
@@ -94,15 +139,7 @@ public class MyAI extends Agent
 		// YOUR CODE BEGINS
 		// ======================================================================
 
-		for(int row = 3; row >=0; --row)
-		{
-			for(int col = 0; col < 10; ++col)
-			{
-				System.out.printf("%.2f,%.2f\t", agentMap[row][col].getPitProb(),agentMap[row][col].getWumpProb());
-			}
-			System.out.println();
-		}
-
+		printAgentMap();
 		return Action.CLIMB;
 		// ======================================================================
 		// YOUR CODE ENDS
