@@ -164,7 +164,7 @@ public class MyAI extends Agent
 			System.out.println();
 		}
 	}
-	
+	//Start KL 10/29
 	private void resetBacktrackForward()
 	{
 		backtrackForward.push(Action.TURN_RIGHT);
@@ -224,6 +224,7 @@ public class MyAI extends Agent
 			
 		return reverse(latestAction);
 	}
+	//End KL 10/29
 
 	public Action getAction
 	(
