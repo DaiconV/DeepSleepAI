@@ -41,15 +41,15 @@ public class World
 	private boolean	hasArrow;		// True if the agent can shoot
 	private boolean	bump;			// Bump percept flag
 	private boolean	scream;			// Scream percept flag
-	private int		agentDir;		// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-	private int		agentX;			// The column where the agent is located ( x-coord = col-coord )
-	private int		agentY;			// The row where the agent is located ( y-coord = row-coord )
+	private int	agentDir;		// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+	private int	agentX;			// The column where the agent is located ( x-coord = col-coord )
+	private int	agentY;			// The row where the agent is located ( y-coord = row-coord )
 
 	private Agent.Action	lastAction;	// The last action the agent made
 	
 	// Board Variables
-	private int			colDimension;	// The number of columns the game board has
-	private int			rowDimension;	// The number of rows the game board has
+	private int		colDimension;	// The number of columns the game board has
+	private int		rowDimension;	// The number of rows the game board has
 	private Tile[][]	board;			// The game board
 	
 	// Random Variable
