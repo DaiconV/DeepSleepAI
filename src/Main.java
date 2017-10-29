@@ -69,11 +69,11 @@ public class Main
 		boolean debug        = false;
 		boolean verbose      = false;
 		boolean randomAI     = false;
-		boolean manualAI      = false;
+		boolean manualAI     = false;
 		boolean folder       = false;
 		String	worldFile    = "";
 		String	outputFile   = "";
-		String 	firstToken 	 = args[0];
+		String 	firstToken   = args[0];
 
 		// If there are options
 		if ( firstToken.charAt(0) == '-' )

@@ -198,9 +198,7 @@ public class World
 					{
 						score -= 1000;
 						if (debug) printWorldInfo();
-		                printBoardInfo();
-						System.out.println(score);
-                        return score;
+						return score;
 					}
 					break;
 				
@@ -266,8 +264,6 @@ public class World
 						if ( goldLooted )
 							score += 1000;
 						if (debug) printWorldInfo();
-	            	    printBoardInfo();
-                        System.out.println(score);
 						return score;
 					}
 					break;
@@ -421,8 +417,8 @@ public class World
 	
 	private void printWorldInfo ( )
 	{
-		//printBoardInfo();
-		printAgentInfo(); 
+		printBoardInfo();
+		printAgentInfo();
 	}
 	
 	private void printBoardInfo ( )
