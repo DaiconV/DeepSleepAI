@@ -187,7 +187,7 @@ public class Main
 				return;
 			}
 			
-			int		numOfScores        = 0;
+			int	numOfScores        = 0;
 			double	sumOfScores        = 0;
 			double	sumOfScoresSquared = 0;
 
