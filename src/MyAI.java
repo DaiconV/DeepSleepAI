@@ -266,28 +266,6 @@ public class MyAI extends Agent
 			if(possibleWumpCount == 1)
 			{
 				wumpusFound(row, col);
-/*				agentMap[row][col].wumpProb = 1;
-				for(int l = 0; l < 4; ++l)
-				{
-					adjCellRow1 = row + (int) Math.sin(Math.PI / 2 * l);
-					adjCellCol1 = col + (int) Math.cos(Math.PI / 2 * l);
-					if(adjCellRow1 < 0 || adjCellCol1 < 0 || adjCellRow1 >= mapRows || adjCellCol1 >= mapCols)
-						continue;
-
-					agentMap[adjCellRow1][adjCellCol1].stench = true;
-
-					if(!agentMap[adjCellRow1][adjCellCol1].explored)
-					{
-						for(int k = 0; k < 4; ++k)
-						{
-							adjCellRow2 = adjCellRow1 + (int) Math.sin(Math.PI / 2 * k);
-							adjCellCol2 = adjCellCol1 + (int) Math.cos(Math.PI / 2 * k);
-							if(adjCellRow2 < 0 || adjCellCol2 < 0 || adjCellRow2 >= mapRows || adjCellCol2 >= mapCols)
-								continue;
-							updateWumpProb(adjCellRow2, adjCellCol2);
-						}
-					}
-				}*/
 				return;
 			}	
 		}
