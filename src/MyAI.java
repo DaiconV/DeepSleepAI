@@ -21,6 +21,8 @@
 
 import java.lang.Math;
 import java.util.Scanner;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class MyAI extends Agent
 {
@@ -70,6 +72,7 @@ public class MyAI extends Agent
 	private int curRow;
 	private int curCol;
 	private int curDir;
+	private Queue<Action> moves = new LinkedList<Action>();
 
 	public MyAI ( )
 	{
@@ -90,6 +93,18 @@ public class MyAI extends Agent
 		curRow = 0;
 		curCol = 0;
 		curDir = 0; 
+
+		moves.add(Action.FORWARD);
+		moves.add(Action.GRAB);
+		moves.add(Action.TURN_RIGHT);
+		moves.add(Action.TURN_RIGHT);
+		moves.add(Action.FORWARD);
+		moves.add(Action.CLIMB);
+//		moves.add(Action.FORWARD);
+//		moves.add(Action.GRAB);
+//		moves.add(Action.TURN_RIGHT);
+//		moves.add(Action.TURN_RIGHT);
+
 		// ======================================================================
 		// YOUR CODE ENDS
 		// ======================================================================
@@ -101,6 +116,12 @@ public class MyAI extends Agent
 			for(int j = 0; j < mapCols; ++j)
 				agentMap[i][j].wumpProb = 0;
 		agentMap[row][col].wumpProb = 1;
+	}
+
+	private int chooseDirection(int row, int col)
+	{
+		if(agentMap[row][col].pitProb == 0 && agentMap[row][col].wumpProb == 0);
+		return 0;			
 	}
 
 	private void updatePitProb(int row, int col)
@@ -414,7 +435,15 @@ public class MyAI extends Agent
 		// ======================================================================
 		// YOUR CODE BEGINS
 		// ======================================================================
-
+		if((breeze || stench) && curCol == 0 && curRow == 0)
+			return Action.CLIMB;
+		else
+		{
+			curCol++;
+			return moves.remove();
+		}
+		
+/*
 		if(bump)		
 			if (curDir == 0)
 				--curCol;
@@ -472,7 +501,7 @@ public class MyAI extends Agent
 		return Action.CLIMB;
 		// ======================================================================
 		// YOUR CODE ENDS
-		// ======================================================================
+*/		// ======================================================================
 	}
 	
 	// ======================================================================
