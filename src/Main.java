@@ -205,6 +205,9 @@ public class Main
 				}
 				catch ( Exception e )
 				{
+					//KL edit
+					System.out.println("Exception is " + e);
+					//KL end
 					numOfScores = 0;
 					sumOfScores = 0;
 					sumOfScoresSquared = 0;
