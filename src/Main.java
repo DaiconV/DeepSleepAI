@@ -1,552 +1,318 @@
 // ======================================================================
-// FILE:        World.java
+// FILE:        Main.java
 //
 // AUTHOR:      Abdullah Younis
 //
-// DESCRIPTION: This file contains the world class, which is responsible
-//              for everything game related.
+// DESCRIPTION: This file is the entry point for the program. The main
+//              function serves a couple purposes: (1) It is the
+//              interface with the command line. (2) It reads the files,
+//              creates the World object, and passes that all the
+//              information necessary. (3) It is in charge of outputing
+//              information.
 //
-// NOTES:       - Don't make changes to this file.
+// NOTES:       - Syntax:
+//
+//                	Wumpus_World [Options] [InputFile] [OutputFile]
+//
+//                  Options:
+//						-m Use the ManualAI instead of MyAI.
+//						-r Use the RandomAI instead of MyAI.
+//                      -d Debug mode, which displays the game board
+//                         after every mode. Useless with -m.
+//                      -h Displays help menu and quits.
+//                      -v Verbose mode displays world file names before
+//                         loading them.
+//                      -f treats the InputFile as a folder containing
+//                         worlds. This will trigger the program to
+//                         display the average score and standard
+//                         deviation instead of a single score. InputFile
+//                         must be entered with this option.
+//
+//                  InputFile: A path to a valid Wumpus World File, or
+//                             folder with -f. This is optional unless
+//                             used with -f or OutputFile.
+//
+//                  OutputFile: A path to a file where the results will
+//                              be written. This is optional.
+//
+//              - If -m and -r are turned on, -m will be turned off.
+//
+//              - Don't make changes to this file.
 // ======================================================================
 
-import java.util.Random;
-import java.io.IOException;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.util.Scanner;
+import java.io.IOException;
 
-public class World
+public class Main
 {
-	// ===============================================================
-	// =						Declarations
-	// ===============================================================	
-	
-	// Tile Structure
-	private class Tile
+    public static void main ( String[] args )
 	{
-		boolean pit    = false;
-		boolean wumpus = false;
-		boolean gold   = false;
-		boolean breeze = false;
-		boolean stench = false;
-	}
-	
-	// Operation Variables
-	private boolean 	debug;			// If true, displays board info after every move
-	private boolean		manualAI;		// If true, alters the behavior of debug for flow purposes
-	
-	// Agent Variables
-	private Agent 	agent;			// The agent
-	private int 	score;			// The agent's score
-	private boolean	goldLooted;		// True if gold was successfuly looted
-	private boolean	hasArrow;		// True if the agent can shoot
-	private boolean	bump;			// Bump percept flag
-	private boolean	scream;			// Scream percept flag
-	private int		agentDir;		// The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
-	private int		agentX;			// The column where the agent is located ( x-coord = col-coord )
-	private int		agentY;			// The row where the agent is located ( y-coord = row-coord )
-
-	private Agent.Action	lastAction;	// The last action the agent made
-	
-	// Board Variables
-	private int			colDimension;	// The number of columns the game board has
-	private int			rowDimension;	// The number of rows the game board has
-	private Tile[][]	board;			// The game board
-	
-	// Random Variable
-	private Random rand;
-	
-	// ===============================================================
-	// =						Constructors
-	// ===============================================================	
-	
-	public World ( ) throws Exception
-	{
-		this ( false, false, false, null );
-	}
-	
-	public World ( boolean _debug, boolean _randomAI, boolean _manualAI ) throws Exception
-	{
-		this ( _debug, _randomAI, _manualAI, null );
-	}
-	
-	public World ( boolean _debug, boolean _randomAI, boolean _manualAI, File worldFile ) throws Exception
-	{
-		// Operation Flags
-		debug        = _debug;
-		manualAI     = _manualAI;
-		
-		// Agent Initialization
-		goldLooted   = false;
-		hasArrow     = true;
-		bump         = false;
-		scream       = false;
-		score        = 0;
-		agentDir     = 0;
-		agentX       = 0;
-		agentY       = 0;
-		lastAction   = Agent.Action.CLIMB;
-		
-		if ( _randomAI )
-			agent = new RandomAI();
-		else if ( _manualAI )
-			agent = new ManualAI();
-		else
-			agent = new MyAI();
-		
-		// Board Initialization
-		if ( worldFile != null )
+		if ( args.length == 0 )
 		{
-			Scanner scan = new Scanner ( worldFile );
-		
-			if ( !scan.hasNextInt() )
-				throw new Exception();
-			
-			colDimension = scan.nextInt();
-			
-			if ( !scan.hasNextInt() )
-				throw new Exception();
-			
-			rowDimension = scan.nextInt();
-			
-			board = new Tile[colDimension][rowDimension];
-		
-			for ( int r = 0; r < rowDimension; ++r )
-				for ( int c = 0; c < colDimension; ++c )
-					board[c][r] = new Tile();
-
-			addFeatures ( scan );
-		}
-		else
-		{
-			rand = new Random ( );
-			colDimension = 4;
-			rowDimension = 4;
-			board = new Tile[colDimension][rowDimension];
-		
-			for ( int r = 0; r < rowDimension; ++r )
-				for ( int c = 0; c < colDimension; ++c )
-					board[c][r] = new Tile();
-
-			addFeatures ( );
-		}
-	}
-	
-	// ===============================================================
-	// =					Engine Function
-	// ===============================================================	
-	
-	public int run ( )
-	{
-		while ( score >= -1000 )
-		{
-			if ( debug || manualAI )
+			// Run on a random world and exit
+			try
 			{
-				printWorldInfo();
-				
-				if ( !manualAI )
+				World world = new World();
+				int score = world.run();
+				System.out.println("Your agent scored: " + score);
+			}
+			catch ( Exception e )
+			{
+				e.printStackTrace();
+			}
+			return;
+		}
+
+		// Important Variables
+		boolean debug        = false;
+		boolean verbose      = false;
+		boolean randomAI     = false;
+		boolean manualAI      = false;
+		boolean folder       = false;
+		String	worldFile    = "";
+		String	outputFile   = "";
+		String 	firstToken 	 = args[0];
+
+		// If there are options
+		if ( firstToken.charAt(0) == '-' )
+		{
+			// Parse Options
+			for ( int index = 1; index < firstToken.length(); ++index )
+			{
+				switch ( firstToken.charAt(index) )
 				{
-					// Pause the game, only if manualAI isn't on
-					// because manualAI pauses for us
-					System.out.println("Press ENTER to continue...");
+					case '-':
+						break;
+						
+					case 'f':
+					case 'F':
+						folder = true;
+						break;
+						
+					case 'v':
+					case 'V':
+						verbose = true;
+						break;
+						
+					case 'r':
+					case 'R':
+						randomAI = true;
+						break;
+						
+					case 'm':
+					case 'M':
+						manualAI = true;
+						break;
+						
+					case 'd':
+					case 'D':
+						debug = true;
+						break;
+						
+					case 'h':
+					case 'H':
+					default:
+						System.out.println ( "Wumpus_World [Options] [InputFile] [OutputFile]" );
+						System.out.println ( );
+						System.out.println ( "Options:" );
+						System.out.println ( "\t-m Use the ManualAI instead of MyAI." );
+						System.out.println ( "\t-r Use the RandomAI instead of MyAI." );
+						System.out.println ( "\t-d Debug mode, which displays the game board" );
+						System.out.println ( "\t   after every mode. Useless with -m." );
+						System.out.println ( "\t-h Displays help menu and quits." );
+						System.out.println ( "\t-f treats the InputFile as a folder containing" );
+						System.out.println ( "\t   worlds. This will trigger the program to" );
+						System.out.println ( "\t   display the average score and standard" );
+						System.out.println ( "\t   deviation instead of a single score. InputFile" );
+						System.out.println ( "\t   must be entered with this option." );
+						System.out.println ( );
+						System.out.println ( "InputFile: A path to a valid Wumpus World File, or" );
+						System.out.println ( "           folder with -f. This is optional unless" );
+						System.out.println ( "           used with -f." );
+						System.out.println ( );
+						System.out.println ( "OutputFile: A path to a file where the results will" );
+						System.out.println ( "            be written. This is optional." );
+						System.out.println ( );
+						return;
+				}
+			}
+			
+			if ( randomAI && manualAI )
+			{
+				// If both AI's on, turn one off and let the user know.
+				manualAI = false;
+				System.out.println ( "[WARNING] Manual AI and Random AI both on; Manual AI was turned off." );
+			}
+			
+			if ( args.length >= 2 )
+				worldFile = args[1];
+			if ( args.length >= 3 )
+				outputFile = args[2];
+		}
+		else
+		{
+			if ( args.length >= 1 )
+				worldFile = args[0];
+			if ( args.length >= 2 )
+				outputFile = args[1];
+		}
+		
+		if ( worldFile == "" )
+		{
+			if ( folder )
+				System.out.println( "[WARNING] No folder specified; running on a random world." );
+			try
+			{
+				World world = new World ( debug, randomAI, manualAI );
+				int score = world.run();
+				System.out.println ( "The agent scored: " + score );
+			}
+			catch ( Exception e )
+			{
+				e.printStackTrace();
+			}
+			return;
+		}
+		
+		if ( folder )
+		{
+			File worldFolder = new File ( worldFile );
+			File[] listOfWorlds = worldFolder.listFiles();
+			
+			if ( listOfWorlds == null )
+			{
+				System.out.println("This is the world directory line 186: " + worldFile);
+				System.out.println ( "[ERROR] Failed to open directory." );
+				return;
+			}
+			
+			int		numOfScores        = 0;
+			double	sumOfScores        = 0;
+			double	sumOfScoresSquared = 0;
+
+			for ( int worldIndex = 0; worldIndex < listOfWorlds.length; worldIndex++ )
+			{
+				if ( verbose )
+					System.out.println ( "Running world: " + listOfWorlds[worldIndex] );
+				
+				int score = 0;
+				try
+				{
+					World world = new World ( debug, randomAI, manualAI, listOfWorlds[worldIndex] );
+					score = world.run();
+				}
+				catch ( Exception e )
+				{
+					//KL edit
+					System.out.println("Exception is " + e);
+					//KL end
+					numOfScores = 0;
+					sumOfScores = 0;
+					sumOfScoresSquared = 0;
+					break;
+				}
+
+				numOfScores += 1;
+				sumOfScores += score;
+				sumOfScoresSquared += score*score;
+			}
+			double avg = (float)sumOfScores / (float)numOfScores;
+			double std_dev = Math.sqrt ( (sumOfScoresSquared - ((sumOfScores*sumOfScores) / (float)numOfScores) ) / (float)numOfScores );
+			if ( outputFile == "" )
+			{
+				System.out.println ( "The agent's average score: " + avg );
+				System.out.println ( "The agent's standard deviation: " + std_dev );
+			}
+			else
+			{
+				BufferedWriter out = null;
+				try
+				{
+					FileWriter fstream = new FileWriter ( outputFile );
+					out = new BufferedWriter ( fstream );
+					out.write ( "SCORE: " + avg + '\n' );
+					out.write ( "STDEV: " + std_dev );
+				}
+				catch ( Exception e )
+				{
+					System.out.println ( "[ERROR] Failure to write to output file." );
+				}
+				finally
+				{
 					try
 					{
-						System.in.read();
+						if ( out != null )
+						{
+							out.close();
+						}
 					}
-					catch (IOException ioe)
+					catch ( IOException ioe )
 					{
 					}
 				}
 			}
-			// Get the move
-			lastAction = agent.getAction
-			(
-				board[agentX][agentY].stench,
-				board[agentX][agentY].breeze,
-				board[agentX][agentY].gold,
-				bump,
-				scream
-			);
+			return;
+		}
+		
 
-			// Make the move
-			--score;
-			bump   = false;
-			scream = false;
-			
-			switch ( lastAction )
+		if ( verbose )
+			System.out.println ( "Running world: " + worldFile );
+		
+		File worldFileObject = new File ( worldFile );
+		
+		if ( !worldFileObject.exists() )
+		{
+			System.out.println("This is the world file 264: " + worldFile);
+			System.out.println ( "[ERROR] Failure to open file." );
+			return;
+		}
+		
+		int score = 0;
+		try
+		{
+			World world = new World ( debug, randomAI, manualAI, worldFileObject );
+			score = world.run();
+		}
+		catch ( Exception e )
+		{
+			e.printStackTrace();
+			System.out.println("This is the world file line 277: " + worldFile);
+			System.out.println ( "[ERROR] Failure to open file." );
+			return;
+		}
+		
+		if ( outputFile == "" )
+		{
+			System.out.println ( "The agent scored: " + score );
+		}
+		else
+		{
+			BufferedWriter out = null;
+			try
 			{
-				case TURN_LEFT:
-					if (--agentDir < 0) agentDir = 3;
-					break;
-					
-				case TURN_RIGHT:
-					if (++agentDir > 3) agentDir = 0;
-					break;
-					
-				case FORWARD:
-					if ( agentDir == 0 && agentX+1 < colDimension )
-						++agentX;
-					else if ( agentDir == 1 && agentY-1 >= 0 )
-						--agentY;
-					else if ( agentDir == 2 && agentX-1 >= 0 )
-						--agentX;
-					else if ( agentDir == 3 && agentY+1 < rowDimension )
-						++agentY;
-					else
-						bump = true;
-					
-					if ( board[agentX][agentY].pit || board[agentX][agentY].wumpus )
+				FileWriter fstream = new FileWriter ( outputFile );
+				out = new BufferedWriter ( fstream );
+				out.write ( "SCORE: " + score );
+			}
+			catch ( Exception e )
+			{
+				System.out.println ( "[ERROR] Failure to write to output file." );
+			}
+			finally
+			{
+				try
+				{
+					if ( out != null )
 					{
-						score -= 1000;
-						if (debug) printWorldInfo();
-						return score;
+						out.close();
 					}
-					break;
-				
-				case SHOOT:
-					if ( hasArrow )
-					{
-						hasArrow = false;
-						score -= 10;
-						if ( agentDir == 0 )
-						{
-							for ( int x = agentX; x < colDimension; ++x )
-								if ( board[x][agentY].wumpus )
-								{
-									board[x][agentY].wumpus = false;
-									board[x][agentY].stench = true;
-									scream = true;
-								}
-						}
-						else if ( agentDir == 1 )
-						{
-							for ( int y = agentY; y >= 0; --y )
-								if ( board[agentX][y].wumpus )
-								{
-									board[agentX][y].wumpus = false;
-									board[agentX][y].stench = true;
-									scream = true;
-								}
-						}
-						else if ( agentDir == 2 )
-						{
-							for ( int x = agentX; x >= 0; --x )
-								if ( board[x][agentY].wumpus )
-								{
-									board[x][agentY].wumpus = false;
-									board[x][agentY].stench = true;
-									scream = true;
-								}
-						}
-						else if ( agentDir == 3 )
-						{
-							for ( int y = agentY; y < rowDimension; ++y )
-								if ( board[agentX][y].wumpus )
-								{
-									board[agentX][y].wumpus = false;
-									board[agentX][y].stench = true;
-									scream = true;
-								}
-						}
-					}
-					break;
-					
-				case GRAB:
-					if ( board[agentX][agentY].gold )
-					{
-						board[agentX][agentY].gold = false;
-						goldLooted = true;
-					}
-					break;
-					
-				case CLIMB:
-					if ( agentX == 0 && agentY == 0 )
-					{
-						if ( goldLooted )
-							score += 1000;
-						if (debug) printWorldInfo();
-						return score;
-					}
-					break;
+				}
+				catch ( IOException ioe )
+				{
+				}
 			}
 		}
-		return score;
-	}
-	// ===============================================================
-	// =				World Generation Functions
-	// ===============================================================
-	
-	private void addFeatures ( )
-	{		
-		// Generate pits
-		for ( int r = 0; r < rowDimension; ++r )
-			for ( int c = 0; c < colDimension; ++c )
-				if ( (c != 0 || r != 0) && randomInt(10) < 2 )
-					addPit ( c, r );
-		
-		// Generate wumpus
-		int wc = randomInt(colDimension);
-		int wr = randomInt(rowDimension);
-		
-		while ( wc == 0 && wr == 0 )
-		{
-			wc = randomInt(colDimension);
-			wr = randomInt(rowDimension);
-		}
-		
-		addWumpus ( wc, wr );
-		
-		// Generate gold
-		int gc = randomInt(colDimension);
-		int gr = randomInt(rowDimension);
-			
-		while ( gc == 0 && gr == 0 )
-		{
-			gc = randomInt(colDimension);
-			gr = randomInt(rowDimension);
-		}
-		
-		addGold ( gc, gr );
-	}
-	
-	private void addFeatures ( Scanner scan ) throws Exception
-	{
-		int c, r;
-		
-		// Add the Wumpus
-		if ( !scan.hasNextInt() )
-			throw new Exception();
-		
-		c = scan.nextInt();
-		
-		if ( !scan.hasNextInt() )
-			throw new Exception();
-		
-		r = scan.nextInt();
-		
-		if(r == -1)
-		{}
-		else
-			addWumpus ( c, r );
-		
-		// Add the Gold
-		
-		if ( !scan.hasNextInt() )
-			throw new Exception();
-		
-		c = scan.nextInt();
-		
-		if ( !scan.hasNextInt() )
-			throw new Exception();
-		
-		r = scan.nextInt();
-		
-		addGold ( c, r );
-		
-		// Add the Pits
-		
-		if ( !scan.hasNextInt() )
-			throw new Exception();
-		
-		int numOfPits = scan.nextInt();
-		
-		while ( numOfPits > 0 && scan.hasNextLine() )
-		{
-			--numOfPits;
-		
-			if ( !scan.hasNextInt() )
-				throw new Exception();
-			
-			c = scan.nextInt();
-		
-			if ( !scan.hasNextInt() )
-				throw new Exception();
-			
-			r = scan.nextInt();
-			
-			addPit ( c, r );
-		}
-	}
-	
-	private void addPit ( int c, int r )
-	{
-		if ( isInBounds(c, r) )
-		{
-			board[c][r].pit = true;
-			addBreeze ( c+1, r );
-			addBreeze ( c-1, r );
-			addBreeze ( c, r+1 );
-			addBreeze ( c, r-1 );
-		}
-	}
-	
-	private void addWumpus ( int c, int r )
-	{
-		if ( isInBounds(c, r) )
-		{
-			board[c][r].wumpus = true;
-			addStench ( c+1, r );
-			addStench ( c-1, r );
-			addStench ( c, r+1 );
-			addStench ( c, r-1 );
-		}
-	}
-	
-	private void addGold ( int c, int r )
-	{
-		if ( isInBounds(c, r) )
-			board[c][r].gold = true;
-	}
-	
-	private void addStench ( int c, int r )
-	{
-		if ( isInBounds(c, r) )
-			board[c][r].stench = true;
-	}
-	
-	private void addBreeze ( int c, int r )
-	{
-		if ( isInBounds(c, r) )
-			board[c][r].breeze = true;
-	}
-	
-	private boolean isInBounds ( int c, int r )
-	{
-		return ( c < colDimension && r < rowDimension && c >= 0  && r >= 0);
-	}
-	
-	// ===============================================================
-	// =				World Printing Functions
-	// ===============================================================
-	
-	private void printWorldInfo ( )
-	{
-		printBoardInfo();
-		printAgentInfo();
-	}
-	
-	private void printBoardInfo ( )
-	{
-		for ( int r = rowDimension-1; r >= 0; --r )
-		{
-			for ( int c = 0; c < colDimension; ++c )
-				printTileInfo ( c, r );
-			System.out.println("");
-			System.out.println("");
-		}
-	}
-
-	private void printTileInfo ( int c, int r )
-	{
-		StringBuilder tileString = new StringBuilder();
-		
-		if (board[c][r].pit)    tileString.append("P");
-		if (board[c][r].wumpus) tileString.append("W");
-		if (board[c][r].gold)   tileString.append("G");
-		if (board[c][r].breeze) tileString.append("B");
-		if (board[c][r].stench) tileString.append("S");
-		
-		if ( agentX == c && agentY == r )
-			tileString.append("@");
-		
-		tileString.append(".");
-		
-		System.out.printf("%8s", tileString.toString());
-	}
-	
-	private void printAgentInfo ( )
-	{
-		System.out.println("Score: "   + score);
-		System.out.println("AgentX: "  + agentX);
-		System.out.println("AgentY: "  + agentY);
-		printDirectionInfo();
-		printActionInfo();
-		printPerceptInfo();
-	}
-	
-	private void printDirectionInfo ( )
-	{
-		switch (agentDir)
-		{
-			case 0:
-				System.out.println("AgentDir: Right");
-				break;
-				
-			case 1:
-				System.out.println("AgentDir: Down");
-				break;
-				
-			case 2:
-				System.out.println("AgentDir: Left");
-				break;
-				
-			case 3:
-				System.out.println("AgentDir: Up");
-				break;
-				
-			default:
-				System.out.println("AgentDir: Invalid");
-		}
-	}
-	
-	private void printActionInfo ( )
-	{
-		switch (lastAction)
-		{
-			case TURN_LEFT:
-				System.out.println("Last Action: Turned Left");
-				break;
-				
-			case TURN_RIGHT:
-				System.out.println("Last Action: Turned Right");
-				break;
-				
-			case FORWARD:
-				System.out.println("Last Action: Moved Forward");
-				break;
-				
-			case SHOOT:
-				System.out.println("Last Action: Shot the arrow");
-				break;
-				
-			case GRAB:
-				System.out.println("Last Action: Grabbed");
-				break;
-				
-			case CLIMB:
-				System.out.println("Last Action: Climbed");
-				break;
-				
-			default:
-				System.out.println("Last Action: Invalid");
-		}
-	}
-	
-	private void printPerceptInfo ( )
-	{
-		StringBuilder perceptString = new StringBuilder("Percepts: ");
-		
-		if (board[agentX][agentY].stench) perceptString.append("Stench, ");
-		if (board[agentX][agentY].breeze) perceptString.append("Breeze, ");
-		if (board[agentX][agentY].gold)   perceptString.append("Glitter, ");
-		if (bump)                         perceptString.append("Bump, ");
-		if (scream)                       perceptString.append("Scream");
-		
-		if ( perceptString.charAt(perceptString.length()-1) == ' '
-				&& perceptString.charAt(perceptString.length()-2) == ',' )
-		{
-			perceptString.deleteCharAt(perceptString.length()-1);
-			perceptString.deleteCharAt(perceptString.length()-1);
-		}
-		
-		System.out.println(perceptString.toString());
-	}
-	
-	// ===============================================================
-	// =					Helper Functions
-	// ===============================================================
-	
-	private int randomInt ( int limit )
-	{
-		return rand.nextInt(limit);
 	}
 }
