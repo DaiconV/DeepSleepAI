@@ -101,7 +101,7 @@ public class MyAI extends Agent
 	private boolean grabbedGold = false;
 	private boolean wumpusDead = false;
 	//this one is just to test
-	int count = 0;
+	private int count = 0;
 	private Stack<Action> currentProcess;
 	//End KL 10/29
 
@@ -488,6 +488,8 @@ public class MyAI extends Agent
 	
 	
 	private Stack<Action> goUp(){
+		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
+		curRow++;
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already up
 		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
@@ -515,6 +517,8 @@ public class MyAI extends Agent
 	}
 	
 	private Stack<Action> goDown(){
+		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
+		curRow--;
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already down
 		if(curDir == 1)
@@ -534,6 +538,68 @@ public class MyAI extends Agent
 		//facing left
 		else if(curDir == 2){
 			returnStack.push(goForward());
+			returnStack.push(turnLeft());
+		}
+		
+		return returnStack;
+		
+	}
+	
+	private Stack<Action> goLeft(){
+		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
+		curCol--;
+		Stack<Action> returnStack = new Stack<Action>();
+		//if already up
+		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+		{
+			returnStack.push(goForward());
+			returnStack.push(turnLeft());
+		}
+		//else if right
+		else if(curDir == 0){
+			returnStack.push(goForward());
+			returnStack.push(turnLeft());
+			returnStack.push(turnLeft());
+			
+		}
+		//facing down
+		else if(curDir == 1){
+			returnStack.push(goForward());
+			returnStack.push(turnRight());
+		}
+		//facing left
+		else if(curDir == 2){
+			returnStack.push(goForward());
+		}
+		
+		return returnStack;
+		
+	}
+	
+	private Stack<Action> goRight(){
+		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
+		curCol--;
+		Stack<Action> returnStack = new Stack<Action>();
+		//if already up
+		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+		{
+			returnStack.push(goForward());
+			returnStack.push(turnRight());
+		}
+		//else if right
+		else if(curDir == 0){
+			returnStack.push(goForward());
+			
+		}
+		//facing down
+		else if(curDir == 1){
+			returnStack.push(goForward());
+			returnStack.push(turnLeft());
+		}
+		//facing left
+		else if(curDir == 2){
+			returnStack.push(goForward());
+			returnStack.push(turnLeft());
 			returnStack.push(turnLeft());
 		}
 		
@@ -650,14 +716,48 @@ public class MyAI extends Agent
 	
 	private Action turnRight() // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	{
-		curDir++;
+		switch(curDir)
+		{
+			case 0 : //right
+				curDir = 1; //down
+				break;
+			case 1 : //down
+				curDir = 2; //left
+				break;
+			case 2 : //left
+				curDir = 3; // up
+				break;
+			case 3 : //up
+				curDir = 0; //right
+				break;
+			default :
+				System.out.println("Is there a negative direction when turning left?");
+				break;		
+		}
 		moves.add(Action.TURN_RIGHT);
 		return Action.TURN_RIGHT;
 	}
 	
-	private Action turnLeft()
+	private Action turnLeft() // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	{
-		curDir--;
+		switch(curDir)
+		{
+			case 0 : //right
+				curDir = 3; //up
+				break;
+			case 1 : //down
+				curDir = 0; //right
+				break;
+			case 2 : //left
+				curDir = 1; // down
+				break;
+			case 3 :
+				curDir = 2; //left
+				break;
+			default :
+				System.out.println("Is there a negative direction when turning left?");
+				break;		
+		}
 		moves.add(Action.TURN_LEFT);
 		return Action.TURN_LEFT;
 	}
@@ -682,18 +782,21 @@ public class MyAI extends Agent
 		
 		//KL 10/29 Starts
 		System.out.println(exit);
-		System.out.println("I should just go straight to see what happens");
+		
 		System.out.println("stench "+ stench);
 		System.out.println("scream "+ scream);
 		System.out.println("bump "+ bump);
 		System.out.println("glitter "+ glitter);
 		System.out.println("scream "+ scream);
+		System.out.println("facing: 0 - right, 1 - down, 2 - left, 3 - up");
 		System.out.println("curDir "+ curDir);
 		System.out.println("curRow "+ curRow);
 		System.out.println("curCol "+ curCol);
+		System.out.println("count "+ count);
+		System.out.println("currentProcess " + currentProcess.toString());
 		//return Action.FORWARD;
 		
-		while(count <6)
+		while(count <7)
 		{
 			if(!currentProcess.empty())
 				return currentProcess.pop();
@@ -703,6 +806,7 @@ public class MyAI extends Agent
 	        		currentProcess = goUp(); 
 	        		break;
 	        	case 1 :
+	        		System.out.println("I should be going up now at case 1");
 	        		currentProcess = goUp(); 
 	        		break;
 	        	case 2 :
@@ -712,11 +816,17 @@ public class MyAI extends Agent
 	        		currentProcess = goDown();
 	        		break;
 	        	case 4 :
+	        		currentProcess = goRight();
+	        		break;
+	        	case 5 :
+	        		currentProcess = goLeft();
+	        		break;
+	        	case 6 :
 	        		return Action.CLIMB;
 	        	default :
 	        		System.out.println("I am at default case now");
 	        		
-	        		count = 6;
+	        		count = 7;
 	        		break;
 			}
 			count++;
