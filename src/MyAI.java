@@ -120,7 +120,7 @@ public class MyAI extends Agent
 		
 		//End MA 10/30
 	
-		mapRows = 4;
+		mapRows = 10; //Changed KL 11/16
 		mapCols = 10;
 		
 		agentMap = new Cell[mapRows][mapCols];
@@ -578,7 +578,7 @@ public class MyAI extends Agent
 	
 	private Stack<Action> goRight(){
 		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
-		curCol--;
+		curCol++; //goForward used to handle curCol and curRow updating
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already up
 		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
@@ -697,7 +697,8 @@ public class MyAI extends Agent
 	
 	private Action goForward() // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	{
-		System.out.println("now I'm at forward");
+		System.out.println("now I'm at goForward");
+		/*
 		if(curDir == 0) { //facing right
 			curCol++;
 		}
@@ -710,6 +711,7 @@ public class MyAI extends Agent
 		else if(curDir == 1) { //facing down
 			curRow--;
 		}
+		*/
 		moves.add(Action.FORWARD);
 		return Action.FORWARD;
 	}
@@ -761,6 +763,29 @@ public class MyAI extends Agent
 		moves.add(Action.TURN_LEFT);
 		return Action.TURN_LEFT;
 	}
+	
+	private ArrayList<int[]> findPath(int[] startCoord, int[] destCoord)
+	{
+		int deltaX = startCoord[0] - destCoord[0];
+		int deltaY = startCoord[1] - destCoord[1];
+		
+		agentMap[curRow][curCol].getPitProb();
+		//return down and right
+		//recurse right
+		findPath(new int[] {startCoord[0]+1, startCoord[1]} , destCoord);
+		
+		//recurse down
+		findPath(new int[] {startCoord[0]+1, startCoord[1]} , destCoord);
+		
+		//I need to find all the paths first and then return the shortest one so the one with shortest
+		//path.length() Can't think of one now but I'll get there
+		//Maybe we can use A* to find it.
+		
+		//filler stuff to allow compile which I'll remove or add to
+		ArrayList<int[]> returnArrList = new ArrayList<int[]>();
+		return returnArrList;
+	}
+	
 
 	public Action getAction
 	(
