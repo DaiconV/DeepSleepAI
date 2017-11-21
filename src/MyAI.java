@@ -403,56 +403,32 @@ public class MyAI extends Agent
 		}
 
 		// If previously explored
-		if(agentMap[curRow][curCol].explored)
-			return;
-		
-		agentMap[curRow][curCol].explored = true;
-
-
+	
 		if(breeze)
 		{
-			int adjRow;
-			int adjCol;
-			for (int n = 0; n < 4; ++n)
+
+			if(!agentMap[curRow][curCol].explored)
 			{
-				adjRow = curRow + oscillationFunction(n);
-				adjCol = curCol + oscillationFunction(n + 1);
+				int adjRow;
+				int adjCol;
+				for (int n = 0; n < 4; ++n)
+				{
+					adjRow = curRow + oscillationFunction(n);
+					adjCol = curCol + oscillationFunction(n + 1);
 
-				if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
-					continue;
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
 
-				updatePitProbability(adjRow, adjCol);
+					updatePitProbability(adjRow, adjCol);
+				}
+				checkBreezeConsistency(curRow, curCol);
 			}
+			else
+				checkBreezeConsistency(curRow, curCol);
 		}
 		else
 		{
-			int adjRow;
-			int adjCol;
-			for (int n = 0; n < 4; ++n)
-			{
-				adjRow = curRow + oscillationFunction(n);
-				adjCol = curCol + oscillationFunction(n + 1);
-
-				if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
-					continue;
-
-				agentMap[adjRow][adjCol].pitProb = 0;
-			}
-			for (int m = 0; m < 4; ++m)
-			{
-				adjRow = curRow + oscillationFunction(m);
-				adjCol = curCol + oscillationFunction(m + 1);
-
-				if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
-					continue;
-
-				noPitConfirmed(adjRow, adjCol);
-			}
-		}
-
-		if(!wumpusFound)
-		{
-			if(stench)
+			if(!agentMap[curRow][curCol].explored)
 			{
 				int adjRow;
 				int adjCol;
@@ -464,22 +440,7 @@ public class MyAI extends Agent
 					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
 						continue;
 
-					updateWumpusProbability(adjRow, adjCol);
-				}
-			}
-			else
-			{
-				int adjRow;
-				int adjCol;
-				for (int n = 0; n < 4; ++n)
-				{
-					adjRow = curRow + oscillationFunction(n);
-					adjCol = curCol + oscillationFunction(n + 1);
-
-					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
-						continue;
-
-					agentMap[adjRow][adjCol].wumpProb = 0;
+					agentMap[adjRow][adjCol].pitProb = 0;
 				}
 				for (int m = 0; m < 4; ++m)
 				{
@@ -489,10 +450,65 @@ public class MyAI extends Agent
 					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
 						continue;
 
-					noWumpusConfirmed(adjRow, adjCol);
+					noPitConfirmed(adjRow, adjCol);
 				}
 			}
 		}
+		if(!wumpusFound)
+		{
+			if(stench)
+			{
+				if(!agentMap[curRow][curCol].explored)
+				{
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
+					{
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						updateWumpusProbability(adjRow, adjCol);
+						checkStenchConsistency(curRow, curCol);
+					}
+				}
+				else
+					checkStenchConsistency(curRow, curCol);
+			}
+		
+			else
+			{
+				if(!agentMap[curRow][curCol].explored)
+				{
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
+					{
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						agentMap[adjRow][adjCol].wumpProb = 0;
+					}
+					for (int m = 0; m < 4; ++m)
+					{
+						adjRow = curRow + oscillationFunction(m);
+						adjCol = curCol + oscillationFunction(m + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						noWumpusConfirmed(adjRow, adjCol);
+					}
+				}
+			}
+		}
+
+		agentMap[curRow][curCol].explored = true;
 		noPitConfirmed(curRow, curCol);
 		noWumpusConfirmed(curRow, curCol);
 	}
