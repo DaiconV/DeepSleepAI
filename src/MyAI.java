@@ -56,27 +56,6 @@ public class MyAI extends Agent
 			explored = false;
 			//End MA 10/30
 		}
-
-		public void setPitProb(double pProb)
-		{
-			pitProb = pProb;
-		}
-
-		public void setWumpProb(double wProb)
-		{
-			wumpProb = wProb;
-		}
-
-		public double getPitProb()
-		{
-			return pitProb;
-		}
-
-		public double getWumpProb()
-		{
-			return wumpProb;
-		}
-
 	}
 
 	private enum Direction
@@ -91,6 +70,7 @@ public class MyAI extends Agent
 	private int curRow;
 	private int curCol;
 	private int curDir; // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+	private boolean wumpusFound;
 	
 	//Start KL 10/29
 	private ArrayList<Action> moves;
@@ -110,8 +90,6 @@ public class MyAI extends Agent
 		// ======================================================================
 		// YOUR CODE BEGINS
 		// ======================================================================
-		//@TODO initialize the map data structure
-		
 		//Start MA 10/30
 		
 		
@@ -133,7 +111,7 @@ public class MyAI extends Agent
 		curRow = 0;
 		curCol = 0;
 		curDir = 0; 
-		
+		wumpusFound = false;
 		
 		
 		//Begin KL 10/29
@@ -156,204 +134,278 @@ public class MyAI extends Agent
 	}
 	//Start add MA 10/30
 
-	private void wumpusFound(int row, int col)
+
+	private int oscillationFunction(int n)
+	// This function oscillates in the form of 1, 0, -1, 0, 1, ....
 	{
+		return (int) (Math.cos(Math.PI / 2 * n));
+	}
+
+/*
+*******************Wumpus Detection Logic*******************
+*/
+
+	private void wumpusConfirmed(int row, int col)
+	{
+		if(agentMap[row][col].wumpProb != 1)
+			return;
+
+		wumpusFound = true;
 		for(int i = 0; i < mapRows; ++i)
 			for(int j = 0; j < mapCols; ++j)
+			{
+				if(i == row && j == col)
+					continue;
 				agentMap[i][j].wumpProb = 0;
-		agentMap[row][col].wumpProb = 1;
+			}
+	}
+	
+	private void noWumpusConfirmed(int row, int col)
+	//Should only call on cells that have been confirmed as non-pits.
+	//This function performs some logical consistency checks on this world.
+	{
+//		System.out.printf("Cell: row %d; col %d\n", row, col);		
+		if(agentMap[row][col].wumpProb != 0)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			if(wumpusFound)
+				return;
+
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+//			System.out.printf("First Cells: row %d; col %d\n", adjRow1, adjCol1);
+
+			checkStenchConsistency(adjRow, adjCol);
+		}
 	}
 
-	private void updatePitProb(int row, int col)
+	private void checkStenchConsistency(int row, int col)
 	{
-		int adjCellRow;
-		int adjCellCol;
-
-		int adjCellCount = 0;
-		int breezeCount = 0;
+		int potentialWumpusRow = -1;
+		int potentialWumpusCol = -1;
+		int potentialWumpusCount = 0;
 		
-		if(agentMap[row][col].pitProb == 0 || agentMap[row][col].pitProb == 1)
-			return;	
-
-		for(int n = 0; n < 4; ++n)
+		if(!agentMap[row][col].stench)
+			return;
+				
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
 		{
-			adjCellRow = row + (int) Math.sin(Math.PI / 2 * n);
-			adjCellCol = col + (int) Math.cos(Math.PI / 2 * n);
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
 
-			if(adjCellRow < 0 || adjCellCol < 0 || adjCellRow >= mapRows || adjCellCol >= mapCols)
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
 				continue;
 
-			++adjCellCount;
-			breezeCount += (agentMap[adjCellRow][adjCellCol].breeze) ? 1: 0;
+			if(agentMap[adjRow][adjCol].wumpProb != 0)
+			{
+				potentialWumpusRow = adjRow;
+				potentialWumpusCol = adjCol;
+				++potentialWumpusCount;
+			}
+
 		}
-		agentMap[row][col].pitProb = ((double)breezeCount) / adjCellCount;
+		if(potentialWumpusCount == 1)
+		{
+			agentMap[potentialWumpusRow][potentialWumpusCol].wumpProb = 1;
+			wumpusConfirmed(potentialWumpusRow, potentialWumpusCol);
+		}
 	}
 
-	public void updateWumpProb(int row, int col)
+	private void updateWumpusProbability(int row, int col)
 	{
-		int adjCellRow;
-		int adjCellCol;
-
 		int adjCellCount = 0;
 		int stenchCount = 0;
-		
-		if(agentMap[row][col].wumpProb == 0 || agentMap[row][col].wumpProb == 1)
-			return;	
 
-		for(int n = 0; n < 4; ++n)
-		{
-			adjCellRow = row + (int) Math.sin(Math.PI / 2 * n);
-			adjCellCol = col + (int) Math.cos(Math.PI / 2 * n);
-
-			if(adjCellRow < 0 || adjCellCol < 0 || adjCellRow >= mapRows || adjCellCol >= mapCols)
-				continue;
-
-			++adjCellCount;
-			stenchCount += (agentMap[adjCellRow][adjCellCol].stench) ? 1: 0;
-		}
-
-		agentMap[row][col].wumpProb = ((double)stenchCount) / adjCellCount;
-		
-	}
-
-	private void checkPitLocalConsistency(int row, int col)
-	{
-		// I know... really gross, but it's helpful.
-		int adjCellRow1;
-		int adjCellCol1;
-		int possiblePitCount;
-		int adjCellRow2;
-		int adjCellCol2;
-
-		// Second loop iterates through cells adjacent to the diagonals and checks to see if they have a breeze
-		if(agentMap[row][col].pitProb == 0)
-			return;			
-
-		for(int n = 0; n < 4; ++n)
-		{
-			adjCellRow1 = row + (int) Math.sin(Math.PI / 2 * n);
-			adjCellCol1 = col + (int) Math.cos(Math.PI / 2 * n);
-
-			if(adjCellRow1 < 0 || adjCellCol1 < 0 || adjCellRow1 >= mapRows || adjCellCol1 >= mapCols || !agentMap[adjCellRow1][adjCellCol1].breeze)
-				continue;
-
-			possiblePitCount = 0;
-			// Last loop iterates around the cells with breezes and counts the number of possible pits around it
-			for(int m = 0; m < 4; ++m)
-			{
-				adjCellRow2 = adjCellRow1 + (int) Math.sin(Math.PI / 2 * m);
-				adjCellCol2 = adjCellCol1 + (int) Math.cos(Math.PI / 2 * m);
-				if(adjCellRow2 < 0 || adjCellCol2 < 0 || adjCellRow2 >= mapRows || adjCellCol2 >= mapCols)
-					continue;
-
-				if(agentMap[adjCellRow2][adjCellCol2].pitProb != 0)
-				{
-//					System.out.printf("row: %d, col: %d\n\trow1: %d, col1: %d\n\t\trow2: %d, col2: %d\n", row, col, adjCellRow1, adjCellCol1, adjCellRow2, adjCellCol2);
-					++possiblePitCount;
-				}
-			
-			}
-
-			// If only 1 possible pit, then update that pit probability to 1
-			if(possiblePitCount == 1)
-			{
-				agentMap[row][col].pitProb = 1;
-				for(int l = 0; l < 4; ++l)
-				{
-					adjCellRow1 = row + (int) Math.sin(Math.PI / 2 * l);
-					adjCellCol1 = col + (int) Math.cos(Math.PI / 2 * l);
-					if(adjCellRow1 < 0 || adjCellCol1 < 0 || adjCellRow1 >= mapRows || adjCellCol1 >= mapCols)
-						continue;
-
-					agentMap[adjCellRow1][adjCellCol1].breeze = true;
-
-					if(!agentMap[adjCellRow1][adjCellCol1].explored)
-					{
-						for(int k = 0; k < 4; ++k)
-						{
-							adjCellRow2 = adjCellRow1 + (int) Math.sin(Math.PI / 2 * k);
-							adjCellCol2 = adjCellCol1 + (int) Math.cos(Math.PI / 2 * k);
-							if(adjCellRow2 < 0 || adjCellCol2 < 0 || adjCellRow2 >= mapRows || adjCellCol2 >= mapCols)
-								continue;
-							updatePitProb(adjCellRow2, adjCellCol2);
-						}
-					}
-				}
-				return;
-			}	
-		}
-	}
-	
-
-	private void checkWumpLocalConsistency(int row, int col)
-	{
-		// I know... really gross, but it's helpful.
-		int adjCellRow1;
-		int adjCellCol1;
-		int possibleWumpCount;
-		int adjCellRow2;
-		int adjCellCol2;
-
-		// Second loop iterates through cells adjacent to the diagonals and checks to see if they have a breeze
 		if(agentMap[row][col].wumpProb == 0)
-			return;			
+			return;
 
-		for(int n = 0; n < 4; ++n)
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
 		{
-			adjCellRow1 = row + (int) Math.sin(Math.PI / 2 * n);
-			adjCellCol1 = col + (int) Math.cos(Math.PI / 2 * n);
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
 
-			if(adjCellRow1 < 0 || adjCellCol1 < 0 || adjCellRow1 >= mapRows || adjCellCol1 >= mapCols || !agentMap[adjCellRow1][adjCellCol1].stench)
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
 				continue;
 
-			possibleWumpCount = 0;
-			// Last loop iterates around the cells with breezes and counts the number of possible pits around it
-			for(int m = 0; m < 4; ++m)
-			{
-				adjCellRow2 = adjCellRow1 + (int) Math.sin(Math.PI / 2 * m);
-				adjCellCol2 = adjCellCol1 + (int) Math.cos(Math.PI / 2 * m);
-				if(adjCellRow2 < 0 || adjCellCol2 < 0 || adjCellRow2 >= mapRows || adjCellCol2 >= mapCols)
-					continue;
+			++adjCellCount;			
+			if(agentMap[adjRow][adjCol].stench)
+				++stenchCount;
 
-				if(agentMap[adjCellRow2][adjCellCol2].wumpProb != 0)
-				{
-//					System.out.printf("row: %d, col: %d\n\trow1: %d, col1: %d\n\t\trow2: %d, col2: %d\n", row, col, adjCellRow1, adjCellCol1, adjCellRow2, adjCellCol2);
-					++possibleWumpCount;
-				}
-			
-			}
-
-			// If only 1 possible pit, then update that pit probability to 1
-			if(possibleWumpCount == 1)
+			if(agentMap[adjRow][adjCol].explored && !agentMap[adjRow][adjCol].stench)
 			{
-				wumpusFound(row, col);
-/*				agentMap[row][col].wumpProb = 1;
-				for(int l = 0; l < 4; ++l)
-				{
-					adjCellRow1 = row + (int) Math.sin(Math.PI / 2 * l);
-					adjCellCol1 = col + (int) Math.cos(Math.PI / 2 * l);
-					if(adjCellRow1 < 0 || adjCellCol1 < 0 || adjCellRow1 >= mapRows || adjCellCol1 >= mapCols)
-						continue;
-					agentMap[adjCellRow1][adjCellCol1].stench = true;
-					if(!agentMap[adjCellRow1][adjCellCol1].explored)
-					{
-						for(int k = 0; k < 4; ++k)
-						{
-							adjCellRow2 = adjCellRow1 + (int) Math.sin(Math.PI / 2 * k);
-							adjCellCol2 = adjCellCol1 + (int) Math.cos(Math.PI / 2 * k);
-							if(adjCellRow2 < 0 || adjCellCol2 < 0 || adjCellRow2 >= mapRows || adjCellCol2 >= mapCols)
-								continue;
-							updateWumpProb(adjCellRow2, adjCellCol2);
-						}
-					}
-				}*/
+				agentMap[row][col].wumpProb = 0;
+				noWumpusConfirmed(row, col);
 				return;
-			}	
+			}
+//			System.out.printf("Cell: %d, %d\n", adjRow, adjCol);
+		}
+
+		if(stenchCount == adjCellCount)
+		{
+			agentMap[row][col].wumpProb = 1;
+			wumpusConfirmed(row, col);
+			return;
+		}
+
+		agentMap[row][col].wumpProb = ((double) stenchCount) / adjCellCount;
+	}
+
+/*
+********************Pit Detection Logic********************
+*/
+
+	private void pitConfirmed(int row, int col)
+	{
+		if(agentMap[row][col].pitProb != 1)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for(int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+			agentMap[adjRow][adjCol].breeze = true;
+		}
+		
+		int adjRow1;
+		int adjCol1;
+		for(int m = 0; m < 4; ++m)
+		{
+			adjRow1 = row + oscillationFunction(m);
+			adjCol1 = col + oscillationFunction(m + 1);
+			
+			if(adjRow1 < 0 || adjRow1 >= mapRows || adjCol1 < 0 || adjCol1 >= mapCols)
+				continue;
+
+			int adjRow2;
+			int adjCol2;
+			for(int l = 0; l < 2; ++l)
+			{
+				adjRow2 = adjRow1 + oscillationFunction(m + l);
+				adjCol2 = adjCol1 + oscillationFunction(m + l + 1);
+		
+				if(adjRow2 < 0 || adjRow2 >= mapRows || adjCol2 < 0 || adjCol2 >= mapCols)
+					continue;
+			
+				updatePitProbability(adjRow2, adjCol2);
+			}
 		}
 	}
-	//End Add MA 10/30
-	
-	//Replaced by MA 10/30
+
+	private void noPitConfirmed(int row, int col)
+	//Should only call on cells that have been confirmed as non-pits.
+	//This function performs some logical consistency checks on this world.
+	{
+//		System.out.printf("Cell: row %d; col %d\n", row, col);		
+		if(agentMap[row][col].pitProb != 0)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+//			System.out.printf("First Cells: row %d; col %d\n", adjRow1, adjCol1);
+
+			checkBreezeConsistency(adjRow, adjCol);
+		}
+	}
+
+	private void checkBreezeConsistency(int row, int col)
+	{
+		int potentialPitRow = -1;
+		int potentialPitCol = -1;
+		int potentialPitCount = 0;
+		
+		if(!agentMap[row][col].breeze)
+			return;
+				
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			if(agentMap[adjRow][adjCol].pitProb != 0)
+			{
+				potentialPitRow = adjRow;
+				potentialPitCol = adjCol;
+				++potentialPitCount;
+			}
+
+		}
+		if(potentialPitCount == 1)
+		{
+			agentMap[potentialPitRow][potentialPitCol].pitProb = 1;
+			pitConfirmed(potentialPitRow, potentialPitCol);		
+		}
+	}
+
+	private void updatePitProbability(int row, int col)
+	{
+		int adjCellCount = 0;
+		int breezeCount = 0;
+
+		if(agentMap[row][col].pitProb == 0 || agentMap[row][col].pitProb == 1)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			++adjCellCount;			
+			if(agentMap[adjRow][adjCol].breeze)
+				++breezeCount;
+
+			if(agentMap[adjRow][adjCol].explored && !agentMap[adjRow][adjCol].breeze)
+			{
+				agentMap[row][col].pitProb = 0;
+				noPitConfirmed(row, col);
+				return;
+			}
+//			System.out.printf("Cell: %d, %d\n", adjRow, adjCol);
+		}
+
+		if(breezeCount == adjCellCount)
+		{
+			agentMap[row][col].pitProb = 1;
+			pitConfirmed(row, col);
+			return;
+		}
+
+		agentMap[row][col].pitProb = ((double) breezeCount) / adjCellCount;
+	}
+
 	public void updateMap
 	(
 		boolean stench,
@@ -361,11 +413,6 @@ public class MyAI extends Agent
 		boolean bump
 	)
 	{
-		int adjCellRow;
-		int adjCellCol;		
-		int diagCellRow;
-		int diagCellCol;
-		
 		agentMap[curRow][curCol].pitProb = 0;
 		agentMap[curRow][curCol].wumpProb = 0;
 		agentMap[curRow][curCol].stench = stench;
@@ -377,101 +424,577 @@ public class MyAI extends Agent
 			if(curDir == 0)
 			{
 				mapCols = curCol + 1;
-				for(int i = 0; i < mapRows; ++i)
-					if(agentMap[i][curCol].pitProb > 0 &&  agentMap[i][curCol].pitProb < 1)
-						updatePitProb(i, curCol);
+				for(int row = 0; row < mapRows; ++row)
+				{
+					checkBreezeConsistency(row, curCol);
+					if(agentMap[row][curCol].pitProb > 0 && agentMap[row][curCol].pitProb < 1)
+						updatePitProbability(row, curCol);
+
+					if(!wumpusFound)
+					{
+						checkStenchConsistency(row, curCol);
+						if(agentMap[row][curCol].wumpProb > 0 && agentMap[row][curCol].wumpProb < 1)
+							updateWumpusProbability(row, curCol);
+					}
+				}
 			}
 			else if(curDir == 3)
 			{
 				mapRows = curRow + 1;
-				for(int j = 0; j < mapCols; ++j)
-					if(agentMap[curRow][j].pitProb > 0 &&  agentMap[curRow][j].pitProb < 1)
-						updatePitProb(curRow, j);
+				for(int col = 0; col < mapCols; ++col)
+				{
+					checkBreezeConsistency(curRow, col);
+					if(agentMap[curRow][col].pitProb > 0 && agentMap[curRow][col].pitProb < 1)
+						updatePitProbability(curRow, col);
+
+					if(!wumpusFound)
+					{
+						checkStenchConsistency(curRow, col);
+						if(agentMap[curRow][col].wumpProb > 0 && agentMap[curRow][col].wumpProb < 1)
+							updateWumpusProbability(curRow, col);
+					}
+				}
 			}
 			return;
 		}
 
 		// If previously explored
-		if(agentMap[curRow][curCol].explored)
-			return;
-		
-		agentMap[curRow][curCol].explored = true;
-		
-		// If stench or breeze, try and figure out where the wumpus or pit is
-		for(int n = 0; n < 4; ++n)
+	
+		if(breeze)
 		{
-			adjCellRow = curRow + (int) Math.sin(Math.PI / 2 * n);
-			adjCellCol = curCol + (int) Math.cos(Math.PI / 2 * n);
 
-			if (adjCellRow < 0 || adjCellCol < 0 || adjCellRow >= mapRows || adjCellCol >= mapCols)
-				continue;
-		
-
-//			agentMap[adjCellRow][adjCellCol].pitProb = 0;
-//			agentMap[adjCellRow][adjCellCol].wumpProb = 0;
-			
-
-			if(breeze)
+			if(!agentMap[curRow][curCol].explored)
 			{
-				checkPitLocalConsistency(adjCellRow, adjCellCol);
-				updatePitProb(adjCellRow, adjCellCol);
-			}
-			else
-			{	
-				if(agentMap[adjCellRow][adjCellCol].pitProb > 0)
+				int adjRow;
+				int adjCol;
+				for (int n = 0; n < 4; ++n)
 				{
-					agentMap[adjCellRow][adjCellCol].pitProb = 0;
+					adjRow = curRow + oscillationFunction(n);
+					adjCol = curCol + oscillationFunction(n + 1);
 
-					for(int m = 0; m < 4; ++m)
-					{
-							diagCellRow = adjCellRow + (int) (Math.cos(Math.PI / 2 * m)) + (int) (Math.sin(Math.PI / 2 * m));
-							diagCellCol = adjCellCol + (int) (Math.cos(Math.PI / 2 * (m + 1))) + (int) (Math.sin(Math.PI / 2 * (m + 1)));
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
 
-							if(diagCellRow < 0 || diagCellCol < 0 || diagCellRow >= mapRows || diagCellCol >= mapCols || agentMap[diagCellRow][diagCellCol].pitProb <= 0)
-								continue;
-							checkPitLocalConsistency(diagCellRow, diagCellCol);
-					}
+					updatePitProbability(adjRow, adjCol);
 				}
-				agentMap[adjCellRow][adjCellCol].pitProb = 0;
 			}
+			checkBreezeConsistency(curRow, curCol);
+		}
+		else
+		{
+			if(!agentMap[curRow][curCol].explored)
+			{
+				int adjRow;
+				int adjCol;
+				for (int n = 0; n < 4; ++n)
+				{
+					adjRow = curRow + oscillationFunction(n);
+					adjCol = curCol + oscillationFunction(n + 1);
 
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
+
+					agentMap[adjRow][adjCol].pitProb = 0;
+				}
+				for (int m = 0; m < 4; ++m)
+				{
+					adjRow = curRow + oscillationFunction(m);
+					adjCol = curCol + oscillationFunction(m + 1);
+
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
+
+					noPitConfirmed(adjRow, adjCol);
+				}
+			}
+		}
+		if(!wumpusFound)
+		{
 			if(stench)
 			{
-				checkWumpLocalConsistency(adjCellRow, adjCellCol);
-				updateWumpProb(adjCellRow, adjCellCol);
-			}
-			else
-			{	
-				if(agentMap[adjCellRow][adjCellCol].wumpProb > 0)
+				if(!agentMap[curRow][curCol].explored)
 				{
-					agentMap[adjCellRow][adjCellCol].wumpProb = 0;
-
-					for(int m = 0; m < 4; ++m)
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
 					{
-							diagCellRow = adjCellRow + (int) (Math.cos(Math.PI / 2 * m)) + (int) (Math.sin(Math.PI / 2 * m));
-							diagCellCol = adjCellCol + (int) (Math.cos(Math.PI / 2 * (m + 1))) + (int) (Math.sin(Math.PI / 2 * (m + 1)));
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
 
-							if(diagCellRow < 0 || diagCellCol < 0 || diagCellRow >= mapRows || diagCellCol >= mapCols || agentMap[diagCellRow][diagCellCol].wumpProb <= 0)
-								continue;
-							checkWumpLocalConsistency(diagCellRow, diagCellCol);
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						updateWumpusProbability(adjRow, adjCol);
 					}
 				}
-				agentMap[adjCellRow][adjCellCol].wumpProb = 0;
+				checkStenchConsistency(curRow, curCol);
+			}
+		
+			else
+			{
+				if(!agentMap[curRow][curCol].explored)
+				{
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
+					{
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						agentMap[adjRow][adjCol].wumpProb = 0;
+					}
+					for (int m = 0; m < 4; ++m)
+					{
+						adjRow = curRow + oscillationFunction(m);
+						adjCol = curCol + oscillationFunction(m + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						noWumpusConfirmed(adjRow, adjCol);
+					}
+				}
+			}
+		}
+
+		agentMap[curRow][curCol].explored = true;
+		noPitConfirmed(curRow, curCol);
+		noWumpusConfirmed(curRow, curCol);
+	}
+
+	private int oscillationFunction(int n)
+	// This function oscillates in the form of 1, 0, -1, 0, 1, ....
+	{
+		return (int) (Math.cos(Math.PI / 2 * n));
+	}
+
+/*
+*******************Wumpus Detection Logic*******************
+*/
+
+	private void wumpusConfirmed(int row, int col)
+	{
+		if(agentMap[row][col].wumpProb != 1)
+			return;
+
+		wumpusFound = true;
+		for(int i = 0; i < mapRows; ++i)
+			for(int j = 0; j < mapCols; ++j)
+			{
+				if(i == row && j == col)
+					continue;
+				agentMap[i][j].wumpProb = 0;
+			}
+	}
+	
+	private void noWumpusConfirmed(int row, int col)
+	//Should only call on cells that have been confirmed as non-pits.
+	//This function performs some logical consistency checks on this world.
+	{
+//		System.out.printf("Cell: row %d; col %d\n", row, col);		
+		if(agentMap[row][col].wumpProb != 0)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			if(wumpusFound)
+				return;
+
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+//			System.out.printf("First Cells: row %d; col %d\n", adjRow1, adjCol1);
+
+			checkStenchConsistency(adjRow, adjCol);
+		}
+	}
+
+	private void checkStenchConsistency(int row, int col)
+	{
+		int potentialWumpusRow = -1;
+		int potentialWumpusCol = -1;
+		int potentialWumpusCount = 0;
+		
+		if(!agentMap[row][col].stench)
+			return;
+				
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			if(agentMap[adjRow][adjCol].wumpProb != 0)
+			{
+				potentialWumpusRow = adjRow;
+				potentialWumpusCol = adjCol;
+				++potentialWumpusCount;
 			}
 
 		}
-
-		for(int m = 0; m < 4; ++m)
+		if(potentialWumpusCount == 1)
 		{
-				diagCellRow = curRow + (int) (Math.cos(Math.PI / 2 * m)) + (int) (Math.sin(Math.PI / 2 * m));
-				diagCellCol = curCol + (int) (Math.cos(Math.PI / 2 * (m + 1))) + (int) (Math.sin(Math.PI / 2 * (m + 1)));
+			agentMap[potentialWumpusRow][potentialWumpusCol].wumpProb = 1;
+			wumpusConfirmed(potentialWumpusRow, potentialWumpusCol);
+		}
+	}
 
-				if(diagCellRow < 0 || diagCellCol < 0 || diagCellRow >= mapRows || diagCellCol >= mapCols || agentMap[diagCellRow][diagCellCol].pitProb <= 0)
-					continue;
-				checkPitLocalConsistency(diagCellRow, diagCellCol);
+	private void updateWumpusProbability(int row, int col)
+	{
+		int adjCellCount = 0;
+		int stenchCount = 0;
+
+		if(agentMap[row][col].wumpProb == 0)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			++adjCellCount;			
+			if(agentMap[adjRow][adjCol].stench)
+				++stenchCount;
+
+			if(agentMap[adjRow][adjCol].explored && !agentMap[adjRow][adjCol].stench)
+			{
+				agentMap[row][col].wumpProb = 0;
+				noWumpusConfirmed(row, col);
+				return;
+			}
+//			System.out.printf("Cell: %d, %d\n", adjRow, adjCol);
 		}
 
+		if(stenchCount == adjCellCount)
+		{
+			agentMap[row][col].wumpProb = 1;
+			wumpusConfirmed(row, col);
+			return;
+		}
+
+		agentMap[row][col].wumpProb = ((double) stenchCount) / adjCellCount;
 	}
+
+/*
+********************Pit Detection Logic********************
+*/
+
+	private void pitConfirmed(int row, int col)
+	{
+		if(agentMap[row][col].pitProb != 1)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for(int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+			agentMap[adjRow][adjCol].breeze = true;
+		}
+		
+		int adjRow1;
+		int adjCol1;
+		for(int m = 0; m < 4; ++m)
+		{
+			adjRow1 = row + oscillationFunction(m);
+			adjCol1 = col + oscillationFunction(m + 1);
+			
+			if(adjRow1 < 0 || adjRow1 >= mapRows || adjCol1 < 0 || adjCol1 >= mapCols)
+				continue;
+
+			int adjRow2;
+			int adjCol2;
+			for(int l = 0; l < 2; ++l)
+			{
+				adjRow2 = adjRow1 + oscillationFunction(m + l);
+				adjCol2 = adjCol1 + oscillationFunction(m + l + 1);
+		
+				if(adjRow2 < 0 || adjRow2 >= mapRows || adjCol2 < 0 || adjCol2 >= mapCols)
+					continue;
+			
+				updatePitProbability(adjRow2, adjCol2);
+			}
+		}
+	}
+
+	private void noPitConfirmed(int row, int col)
+	//Should only call on cells that have been confirmed as non-pits.
+	//This function performs some logical consistency checks on this world.
+	{
+//		System.out.printf("Cell: row %d; col %d\n", row, col);		
+		if(agentMap[row][col].pitProb != 0)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+			
+//			System.out.printf("First Cells: row %d; col %d\n", adjRow1, adjCol1);
+
+			checkBreezeConsistency(adjRow, adjCol);
+		}
+	}
+
+	private void checkBreezeConsistency(int row, int col)
+	{
+		int potentialPitRow = -1;
+		int potentialPitCol = -1;
+		int potentialPitCount = 0;
+		
+		if(!agentMap[row][col].breeze)
+			return;
+				
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			if(agentMap[adjRow][adjCol].pitProb != 0)
+			{
+				potentialPitRow = adjRow;
+				potentialPitCol = adjCol;
+				++potentialPitCount;
+			}
+
+		}
+		if(potentialPitCount == 1)
+		{
+			agentMap[potentialPitRow][potentialPitCol].pitProb = 1;
+			pitConfirmed(potentialPitRow, potentialPitCol);		
+		}
+	}
+
+	private void updatePitProbability(int row, int col)
+	{
+		int adjCellCount = 0;
+		int breezeCount = 0;
+
+		if(agentMap[row][col].pitProb == 0 || agentMap[row][col].pitProb == 1)
+			return;
+
+		int adjRow;
+		int adjCol;
+		for (int n = 0; n < 4; ++n)
+		{
+			adjRow = row + oscillationFunction(n);
+			adjCol = col + oscillationFunction(n + 1);
+
+			if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+				continue;
+
+			++adjCellCount;			
+			if(agentMap[adjRow][adjCol].breeze)
+				++breezeCount;
+
+			if(agentMap[adjRow][adjCol].explored && !agentMap[adjRow][adjCol].breeze)
+			{
+				agentMap[row][col].pitProb = 0;
+				noPitConfirmed(row, col);
+				return;
+			}
+//			System.out.printf("Cell: %d, %d\n", adjRow, adjCol);
+		}
+
+		if(breezeCount == adjCellCount)
+		{
+			agentMap[row][col].pitProb = 1;
+			pitConfirmed(row, col);
+			return;
+		}
+
+		agentMap[row][col].pitProb = ((double) breezeCount) / adjCellCount;
+	}
+
+	public void updateMap
+	(
+		boolean stench,
+		boolean breeze,
+		boolean bump
+	)
+	{
+		agentMap[curRow][curCol].pitProb = 0;
+		agentMap[curRow][curCol].wumpProb = 0;
+		agentMap[curRow][curCol].stench = stench;
+		agentMap[curRow][curCol].breeze = breeze;
+
+		// bump tells us that we hit a wall, record this number
+		if(bump)
+		{
+			if(curDir == 0)
+			{
+				mapCols = curCol + 1;
+				for(int row = 0; row < mapRows; ++row)
+				{
+					checkBreezeConsistency(row, curCol);
+					if(agentMap[row][curCol].pitProb > 0 && agentMap[row][curCol].pitProb < 1)
+						updatePitProbability(row, curCol);
+
+					if(!wumpusFound)
+					{
+						checkStenchConsistency(row, curCol);
+						if(agentMap[row][curCol].wumpProb > 0 && agentMap[row][curCol].wumpProb < 1)
+							updateWumpusProbability(row, curCol);
+					}
+				}
+			}
+			else if(curDir == 3)
+			{
+				mapRows = curRow + 1;
+				for(int col = 0; col < mapCols; ++col)
+				{
+					checkBreezeConsistency(curRow, col);
+					if(agentMap[curRow][col].pitProb > 0 && agentMap[curRow][col].pitProb < 1)
+						updatePitProbability(curRow, col);
+
+					if(!wumpusFound)
+					{
+						checkStenchConsistency(curRow, col);
+						if(agentMap[curRow][col].wumpProb > 0 && agentMap[curRow][col].wumpProb < 1)
+							updateWumpusProbability(curRow, col);
+					}
+				}
+			}
+			return;
+		}
+
+		// If previously explored
+	
+		if(breeze)
+		{
+
+			if(!agentMap[curRow][curCol].explored)
+			{
+				int adjRow;
+				int adjCol;
+				for (int n = 0; n < 4; ++n)
+				{
+					adjRow = curRow + oscillationFunction(n);
+					adjCol = curCol + oscillationFunction(n + 1);
+
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
+
+					updatePitProbability(adjRow, adjCol);
+				}
+			}
+			checkBreezeConsistency(curRow, curCol);
+		}
+		else
+		{
+			if(!agentMap[curRow][curCol].explored)
+			{
+				int adjRow;
+				int adjCol;
+				for (int n = 0; n < 4; ++n)
+				{
+					adjRow = curRow + oscillationFunction(n);
+					adjCol = curCol + oscillationFunction(n + 1);
+
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
+
+					agentMap[adjRow][adjCol].pitProb = 0;
+				}
+				for (int m = 0; m < 4; ++m)
+				{
+					adjRow = curRow + oscillationFunction(m);
+					adjCol = curCol + oscillationFunction(m + 1);
+
+					if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+						continue;
+
+					noPitConfirmed(adjRow, adjCol);
+				}
+			}
+		}
+		if(!wumpusFound)
+		{
+			if(stench)
+			{
+				if(!agentMap[curRow][curCol].explored)
+				{
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
+					{
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						updateWumpusProbability(adjRow, adjCol);
+					}
+				}
+				checkStenchConsistency(curRow, curCol);
+			}
+		
+			else
+			{
+				if(!agentMap[curRow][curCol].explored)
+				{
+					int adjRow;
+					int adjCol;
+					for (int n = 0; n < 4; ++n)
+					{
+						adjRow = curRow + oscillationFunction(n);
+						adjCol = curCol + oscillationFunction(n + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						agentMap[adjRow][adjCol].wumpProb = 0;
+					}
+					for (int m = 0; m < 4; ++m)
+					{
+						adjRow = curRow + oscillationFunction(m);
+						adjCol = curCol + oscillationFunction(m + 1);
+
+						if(adjRow < 0 || adjRow >= mapRows || adjCol < 0 || adjCol >= mapCols)
+							continue;
+
+						noWumpusConfirmed(adjRow, adjCol);
+					}
+				}
+			}
+		}
+
+		agentMap[curRow][curCol].explored = true;
+		noPitConfirmed(curRow, curCol);
+		noWumpusConfirmed(curRow, curCol);
+	}
+
 	//End Replace MA 10/30
 	public void printAgentMap()
 	{
