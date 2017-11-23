@@ -177,12 +177,34 @@ public class SimpleCell
 	private int count = 0;
 	private Stack<Action> currentProcess;
 	//End KL 10/29
+	
+	Stack<State> path; //KL 11/22: added for testing purposes 
 
 	public MyAI ( )
 	{
 		// ======================================================================
 		// YOUR CODE BEGINS
 		// ======================================================================
+		
+		//Start KL 11/22
+		path = new Stack<State>();
+		
+		path.push(new State(0,0,1));
+		path.push(new State(1,0,1));
+		
+		path.push(new State(1,1,3));
+		path.push(new State(0,1,3));
+		path.push(new State(0,1,2)); 
+		path.push(new State(0,2,2)); 
+		path.push(new State(0,2,1)); 
+		path.push(new State(0,2,0));
+		path.push(new State(0,1,0));
+		path.push(new State(0,0,0));
+		
+		//currentQueue = new Queue<Action>();
+		
+		//End KL 11/22
+		
 		//Start MA 10/30
 		
 		
@@ -688,7 +710,8 @@ public class SimpleCell
 	{
 		return new State(curState.row, curState.col, (curState.dir - 1) % 4);
 	}
-
+	
+	
 	private Stack<State> recursiveSearch(State curState, int depth)
 	{
 		Stack<State> tempStack;
@@ -780,8 +803,63 @@ public class SimpleCell
 			System.out.println(cell.toString());
 		}
 	}
-
+	private void addToProcess(Stack<Action> actions)
+	{
+		for(int i = actions.size()-1; i>-1; i--)
+		{
+			currentProcess.insertElementAt(actions.elementAt(i),0);
+		}
+	}
 	
+	private void makeItinerary(Stack<State> path)
+	{
+		while(path.size() > 1)
+		{
+			System.out.println("current path: path");
+			System.out.println(path);
+			checkDifference(path.pop(),path.peek());
+		}
+		
+	}
+	
+	private void checkDifference(State firstState, State secondState)
+	{
+		if((secondState.row - firstState.row) == 0) //no row change
+		{
+			if((secondState.col - firstState.col) == 0) //no column change
+			{
+				switch((secondState.dir - firstState.dir))
+				{
+					case 0: //No change in direction, not possible
+						System.out.println("No change in direction, not possible");
+						break;
+					default: //There is a change in direction
+						//System.out.println("change in direction from " + Integer.toString(
+						//firstState.dir) + Integer.toString(secondState.dir));
+						break;
+				}
+			}
+			else
+			{
+				if((secondState.col - firstState.col) == 1)
+					addToProcess(goRight());
+
+				else //-1 direction
+					addToProcess(goLeft());
+			}	
+		}
+		else
+		{
+			if((secondState.row - firstState.row) == 1) //row goes up 1, no direction change
+			{	
+				System.out.println("I should go up now");
+				addToProcess(goUp());
+				return;
+			}
+			else
+				addToProcess(goDown());	
+		}
+	}
 	
 	private Stack<Action> goUp(){
 		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
@@ -1060,12 +1138,13 @@ public class SimpleCell
 		return Action.TURN_LEFT;
 	}
 	
+	
+	/*
 	private ArrayList<int[]> findPath(int[] startCoord, int[] destCoord)
 	{
 		int deltaX = startCoord[0] - destCoord[0];
 		int deltaY = startCoord[1] - destCoord[1];
 		
-		agentMap[curRow][curCol].getPitProb();
 		//return down and right
 		//recurse right
 		findPath(new int[] {startCoord[0]+1, startCoord[1]} , destCoord);
@@ -1081,7 +1160,7 @@ public class SimpleCell
 		ArrayList<int[]> returnArrList = new ArrayList<int[]>();
 		return returnArrList;
 	}
-	
+	*/
 
 	public Action getAction
 	(
@@ -1115,45 +1194,55 @@ public class SimpleCell
 		System.out.println("curCol "+ curCol);
 		System.out.println("count "+ count);
 		System.out.println("currentProcess " + currentProcess.toString());
-		//return Action.FORWARD;
+
 		
-		while(count <7)
+		makeItinerary(path);
+		while(!currentProcess.empty())
 		{
-			if(!currentProcess.empty())
-				return currentProcess.pop();
-			switch(count)
-			{
-	        	case 0 :
-	        		currentProcess = goUp(); 
-	        		break;
-	        	case 1 :
-	        		System.out.println("I should be going up now at case 1");
-	        		currentProcess = goUp(); 
-	        		break;
-	        	case 2 :
-	        		currentProcess = goDown();
-	        		break;
-	        	case 3 :
-	        		currentProcess = goDown();
-	        		break;
-	        	case 4 :
-	        		currentProcess = goRight();
-	        		break;
-	        	case 5 :
-	        		currentProcess = goLeft();
-	        		break;
-	        	case 6 :
-	        		return Action.CLIMB;
-	        	default :
-	        		System.out.println("I am at default case now");
-	        		
-	        		count = 7;
-	        		break;
-			}
-			count++;
-			
+			System.out.println(currentProcess);
+			return currentProcess.pop();
 		}
 		
+		System.out.println("now I am outside the currentProcess");
+		
+		
+//		while(count <7)
+//		{
+//			if(!currentProcess.empty())
+//				return currentProcess.pop();
+//			switch(count)
+//			{
+//	        	case 0 :
+//	        		currentProcess = goUp(); 
+//	        		break;
+//	        	case 1 :
+//	        		System.out.println("I should be going up now at case 1");
+//	        		currentProcess = goUp(); 
+//	        		break;
+//	        	case 2 :
+//	        		currentProcess = goDown();
+//	        		break;
+//	        	case 3 :
+//	        		currentProcess = goDown();
+//	        		break;
+//	        	case 4 :
+//	        		currentProcess = goRight();
+//	        		break;
+//	        	case 5 :
+//	        		currentProcess = goLeft();
+//	        		break;
+//	        	case 6 :
+//	        		return Action.CLIMB;
+//	        	default :
+//	        		System.out.println("I am at default case now");
+//	        		
+//	        		count = 7;
+//	        		break;
+//			}
+//			count++;
+//			
+//		}
+		/*
 		if(exit){
 			if(curRow == 0 && curCol == 0)
 				return Action.CLIMB;
@@ -1163,95 +1252,7 @@ public class SimpleCell
 		if(scream) {
 			wumpusDead = true;
 		}
-		
-		else if ( glitter)
-		{
-			if(grabbedGold)
-			{
-				System.out.println("It should not be going here because exit should be true");
-				exit = true;
-				return getOut();
-			}
-			else
-			{
-				exit = true;
-				//moves.add(Action.GRAB);
-				return Action.GRAB;
-			}
-		}
-		
-		else if(bump){
-			System.out.println(curDir);
-			if (curDir == 0) //facing right
-			{
-				mapRows = curCol;
-				exit = true;
-				return getOut();
-				
-			//
-			}
-			else if (curDir == 1) //facing up
-			{
-				assert curRow == 0: "bump at line 574, facing up, curRow should be 0";
-				//++curRow;
-				if(curCol != mapCols) //if not in upper right corner
-				{
-					//something kinda complicated
-				}
-				
-					
-					
-			}
-			else if (curDir == 2) //facing left
-			{
-				assert curCol == 0: "bump at line 579, facing left, curCol should be 0";
-				//++curCol;
-			}
-			else if (curDir == 3)					//facing down
-			{
-				assert mapRows <= curRow : "bump at line 587, facing down, maybe this board is not square";
-				mapRows = curRow;
-				if(curRow != mapRows)
-				{
-					//I should check my precepts and act accordingly but for now maybe I should just skidaddle
-					//however I should not go forward
-				}
-				//--curRow;
-			}
-			else {
-				System.out.println("This shouldn't be happening");
-			}
-		}
-		
-		
-		
-		else if(stench && !shotAlready)
-		{
-			//moves.add(Action.SHOOT);
-			shotAlready = true;
-			return Action.SHOOT;
-		}
-		else if(stench && shotAlready && !bump){
-			//Go somewhere else somehow
-			if(!wumpusDead)
-				return reverse(moves.get(moves.size()));
-			else
-			{
-				return goForward();
-			}
-		}
-		
-		else{
-			//Nothing going on
-			//Anything wrong with this?
-			return goForward();
-		}
-		
-			
-			
-	
-		
-		
+		*/
 		
 		//KL 10/29 Ends
 		printAgentMap();
