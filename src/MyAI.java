@@ -23,6 +23,7 @@
 import java.util.ArrayList;
 import java.util.Stack;
 import java.lang.Math;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -173,13 +174,18 @@ public class SimpleCell
 	private boolean shotAlready = false;
 	private boolean grabbedGold = false;
 	private boolean wumpusDead = false;
-	//this one is just to test
+	
 	private int count = 0;
 	private Stack<Action> currentProcess;
+	private Stack<String> curStrProcess;
 	//End KL 10/29
-	
+	//Start KL 11/22
 	Stack<State> path; //KL 11/22: added for testing purposes 
-
+	int futureRow; 
+	int futureCol;
+	int futureDir;
+	//End KL 11/22
+	
 	public MyAI ( )
 	{
 		// ======================================================================
@@ -201,7 +207,7 @@ public class SimpleCell
 		path.push(new State(0,1,0));
 		path.push(new State(0,0,0));
 		
-		//currentQueue = new Queue<Action>();
+		curStrProcess = new Stack<String>();
 		
 		//End KL 11/22
 		
@@ -226,6 +232,10 @@ public class SimpleCell
 		curRow = 0;
 		curCol = 0;
 		curDir = 0; 
+		
+		futureRow = 0;
+		futureCol = 0;
+		futureDir = 0;
 		wumpusFound = false;
 		
 		
@@ -811,6 +821,7 @@ public class SimpleCell
 		}
 	}
 	
+	
 	private void makeItinerary(Stack<State> path)
 	{
 		while(path.size() > 1)
@@ -842,10 +853,16 @@ public class SimpleCell
 			else
 			{
 				if((secondState.col - firstState.col) == 1)
+				{
 					addToProcess(goRight());
-
+					curStrProcess.insertElementAt("right",0);
+				}
 				else //-1 direction
+				{
 					addToProcess(goLeft());
+					curStrProcess.insertElementAt("left",0);
+				}
+				
 			}	
 		}
 		else
@@ -854,34 +871,38 @@ public class SimpleCell
 			{	
 				System.out.println("I should go up now");
 				addToProcess(goUp());
+				curStrProcess.insertElementAt("up",0);
 				return;
 			}
 			else
-				addToProcess(goDown());	
+			{
+				addToProcess(goDown());
+				curStrProcess.insertElementAt("down",0);
+			}
 		}
 	}
 	
 	private Stack<Action> goUp(){
 		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
-		curRow++;
+		futureRow++;
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already up
-		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+		if(futureDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 			returnStack.push(goForward());
 		//else if right
-		else if(curDir == 0){
+		else if(futureDir == 0){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 			
 		}
 		//facing down
-		else if(curDir == 1){
+		else if(futureDir == 1){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 			returnStack.push(turnLeft());
 		}
 		//facing left
-		else if(curDir == 2){
+		else if(futureDir == 2){
 			returnStack.push(goForward());
 			returnStack.push(turnRight());
 		}
@@ -895,22 +916,22 @@ public class SimpleCell
 		curRow--;
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already down
-		if(curDir == 1)
+		if(futureDir == 1)
 			returnStack.push(goForward());
 		//else if right
-		else if(curDir == 0){
+		else if(futureDir == 0){
 			returnStack.push(goForward());
 			returnStack.push(turnRight());
 			
 		}
 		//facing up
-		else if(curDir == 3){
+		else if(futureDir == 3){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 			returnStack.push(turnLeft());
 		}
 		//facing left
-		else if(curDir == 2){
+		else if(futureDir == 2){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 		}
@@ -921,28 +942,28 @@ public class SimpleCell
 	
 	private Stack<Action> goLeft(){
 		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
-		curCol--;
+		futureCol--;
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already up
-		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+		if(futureDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 		{
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 		}
 		//else if right
-		else if(curDir == 0){
+		else if(futureDir == 0){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 			returnStack.push(turnLeft());
 			
 		}
 		//facing down
-		else if(curDir == 1){
+		else if(futureDir == 1){
 			returnStack.push(goForward());
 			returnStack.push(turnRight());
 		}
 		//facing left
-		else if(curDir == 2){
+		else if(futureDir == 2){
 			returnStack.push(goForward());
 		}
 		
@@ -952,26 +973,26 @@ public class SimpleCell
 	
 	private Stack<Action> goRight(){
 		//THIS FUNCTION DOES NOT CHECK FOR BOUNDS
-		curCol++; //goForward used to handle curCol and curRow updating
+		futureCol++; //goForward used to handle curCol and curRow updating
 		Stack<Action> returnStack = new Stack<Action>();
 		//if already up
-		if(curDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
+		if(futureDir == 3) // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 		{
 			returnStack.push(goForward());
 			returnStack.push(turnRight());
 		}
 		//else if right
-		else if(curDir == 0){
+		else if(futureDir == 0){
 			returnStack.push(goForward());
 			
 		}
 		//facing down
-		else if(curDir == 1){
+		else if(futureDir == 1){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 		}
 		//facing left
-		else if(curDir == 2){
+		else if(futureDir == 2){
 			returnStack.push(goForward());
 			returnStack.push(turnLeft());
 			returnStack.push(turnLeft());
@@ -1087,24 +1108,26 @@ public class SimpleCell
 		}
 		*/
 		moves.add(Action.FORWARD);
+		int[] arr = {futureCol,futureRow};
+		route.add(arr);
 		return Action.FORWARD;
 	}
 	
 	private Action turnRight() // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	{
-		switch(curDir)
+		switch(futureDir)
 		{
 			case 0 : //right
-				curDir = 1; //down
+				futureDir = 1; //down
 				break;
 			case 1 : //down
-				curDir = 2; //left
+				futureDir = 2; //left
 				break;
 			case 2 : //left
-				curDir = 3; // up
+				futureDir = 3; // up
 				break;
 			case 3 : //up
-				curDir = 0; //right
+				futureDir = 0; //right
 				break;
 			default :
 				System.out.println("Is there a negative direction when turning left?");
@@ -1116,19 +1139,19 @@ public class SimpleCell
 	
 	private Action turnLeft() // The direction the agent is facing: 0 - right, 1 - down, 2 - left, 3 - up
 	{
-		switch(curDir)
+		switch(futureDir)
 		{
 			case 0 : //right
-				curDir = 3; //up
+				futureDir = 3; //up
 				break;
 			case 1 : //down
-				curDir = 0; //right
+				futureDir = 0; //right
 				break;
 			case 2 : //left
-				curDir = 1; // down
+				futureDir = 1; // down
 				break;
 			case 3 :
-				curDir = 2; //left
+				futureDir = 2; //left
 				break;
 			default :
 				System.out.println("Is there a negative direction when turning left?");
@@ -1200,6 +1223,13 @@ public class SimpleCell
 		while(!currentProcess.empty())
 		{
 			System.out.println(currentProcess);
+			if(currentProcess.peek() == Action.FORWARD)
+			{
+				curStrProcess.pop(); //curStrProcess has strings for right down left up
+				curRow = futureRow;
+				curCol = futureCol;
+				curDir = futureDir;
+			}
 			return currentProcess.pop();
 		}
 		
