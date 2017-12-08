@@ -157,7 +157,7 @@ public class World
 					}
 				}
 			}
-			printWorldInfo();
+//			printWorldInfo();
 			// Get the move
 			lastAction = agent.getAction
 			(
